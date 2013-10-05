@@ -1,0 +1,254 @@
+<!doctype html>  
+<!-- Stacktodo developed by Daniel Dressler (warll.dressler@gmail.com)
+Thanks to:
+Nihhongoup for the backgrounds
+jQuery for easy javascript
+HTML5 boiler plate for easy html5
+
+Stacktodo uses localstorage extensivly which requires a decent browser.
+If you are using IE I can only say, you really shouldn't
+IE will always lag the open source browsers, you are best off "geting with the program"
+by using one of hte many free, powerful, open source browsers--> 
+
+
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <title>StackToDo</title>
+  <meta name="description" content="A HTML5 stack like todo list">
+  <meta name="author" content="Daniel Dressler">
+
+  <!--  Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Place favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+  <!-- CSS : implied media="all" -->
+  <link rel="stylesheet" href="css/style.css?v=2">
+
+
+  <!-- All JavaScript at the bottom, except for Modernizr which enables HTML5 elements & feature detects -->
+  <script src="js/libs/modernizr-1.6.min.js"></script>
+
+<style>
+html{	
+	overflow-y:auto; 
+	overflow-x:hidden;
+}
+#glass , #container {
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+
+}
+
+#glass {
+	margin: 40px auto 0 auto;
+	background: rgba(255, 255, 255, 0.4);
+	padding: 10px;
+	display: table;
+}
+
+header {
+	margin-bottom: 10px;
+}
+
+header h6 {
+	text-align: center;
+	font-size: 12px;
+	color: rgba(0,0,0,.25);
+	margin-bottom: 2px;
+}
+
+.wrapper {
+	background: white;
+	padding: 10px;
+	width: 400px;
+}
+
+#new {
+	width: 98.5%;
+	height: 1.5em;
+}
+
+#pending {
+	text-align: right;
+	list-style: none;
+	font-size: 1.5em;
+}
+
+ol .current {
+	font-size: 1.4em;
+}
+
+#cache {
+	visibility: hidden
+}
+
+#cache img {
+	float: left;
+]
+</style>
+</head>
+
+<body>
+<div id="glass"><div class="wrapper">
+	<header>
+		<h6>Enter adds task, Arrows select, Delete removes selected</h6>
+		<input type="text" id="new" />
+	</header>
+
+	<div id="main">
+		<ol id="pending">
+		</ol>
+	</div>
+</div></div>
+
+<div id="cache"></div>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js"></script>
+<script>!window.jQuery && document.write(unescape('%3Cscript src="js/libs/jquery-1.4.2.js"%3E%3C/script%3E'))</script>
+
+<script>
+var wallpapers = ["yellow_waves.png","blue_thatch.png","yellow_pipes.png","blue_squares.png","pink_fans.png"];
+var background = localStorage.getItem("background");
+if(background == undefined){ background = "0";};
+setWallpaper(wallpapers, background);
+
+$("#new").focus();
+var tasks = populate();
+var active = localStorage.getItem("active");
+if(active == undefined){ active = "0";};
+active = rebuild(tasks,active);
+
+
+$(document).keyup(function(e) {
+	if(e.keyCode == 13) {
+		//enter key
+		addTask(tasks);
+		active = rebuild(tasks, active);
+	}
+	if(e.keyCode == 46) {
+		//del key
+		active = removeTask(tasks, active);
+		active = rebuild(tasks, active);
+	}
+	if(e.keyCode == 40) {
+		//down key
+		active--;
+		if (active < 0) {active = 0;};
+		setCurrent(active)
+	}
+	if(e.keyCode == 38) {
+		//up key
+		active++;
+		if (active >= tasks.length) {active = tasks.length - 1;};
+		setCurrent(active)
+	}
+	if(e.keyCode == 39) {
+		//right key
+		background--;
+		if (background < 0) {background = wallpapers.length - 1;};
+		setWallpaper(wallpapers,background);
+	}
+	if(e.keyCode == 37) {
+		//left key
+		background++;
+		if (background >= wallpapers.length) {background = 0;};
+		setWallpaper(wallpapers,background);
+	}
+});
+
+for (var i =0; i < wallpapers.length; i++) {
+	$("#cache").append('<img src="./images/'+wallpapers[i]+'" alt=""></img>');
+}
+
+function setWallpaper(wallpapers, background) {
+	$("body").css("background","url('./images/"+wallpapers[background]+"')");
+	localStorage.setItem("background",background);
+}
+
+function populate() {
+	var tasks = localStorage.getItem("tasks");
+	if (tasks) {
+		tasks = tasks.split(";|;");
+	} else {
+		tasks = [];
+	}
+	return tasks;
+}
+
+function store(tasks) {
+	try {
+		localStorage.setItem("tasks", tasks.join(";|;"));
+		
+	} catch (e) {
+		if (e == QUOTA_EXCEEDED_ERR) {
+			alert("Quota exceeded! You've managed to stroe 5MB of text in local storage =\\");
+		}
+	}
+}
+
+function removeTask(tasks, active) {
+	tasks.splice(active, 1);
+	setCurrent(--active);
+	store(tasks);
+	return active;
+}
+
+function addTask(tasks) {
+	if ($("#new").val()) {
+		tasks.push($("#new").val());
+		store(tasks);
+	}
+	$("#new").val("");
+}
+
+function rebuild(tasks, active){
+	$("#current").text("");
+	$("#pending").empty();
+
+	var index = tasks.length;
+	for (var i = 0; i < index; i++) {
+		$("#pending").prepend('<li id="task'+i+'">'+tasks[i]+"</li>");
+	}
+	if (active >= index) { active = index -1};
+	if (active < 0) {active = 0};
+	setCurrent(active);
+	return active;
+}
+
+function setCurrent(index){
+	localStorage.setItem("active",index)
+	$(".current").removeClass("current");
+	$("#task"+index).addClass("current");
+}
+</script>
+
+<!-- scripts concatenated and minified via ant build script-->
+<script src="js/plugins.js"></script>
+<script src="js/script.js"></script>
+<!-- end concatenated and minified scripts-->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9211940-22']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>
